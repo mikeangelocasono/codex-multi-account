@@ -1,0 +1,28 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Runtime state lives in ~/.codex-multi-account, never in the repo. These
+# patterns are anchored to the repo root so they cannot shadow source
+# directories such as src/accounts/.
+/accounts/
+/runtime/
+/backups/
+/locks/
+auth.json
+*.auth.json
+.codex-multi-account/
+runtime.lock
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

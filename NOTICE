@@ -1,0 +1,36 @@
+codex-multi-account
+===================
+
+This project is a derivative work of `claude-multi-account`
+(https://github.com/Loopsmiths-labs/claude-multi-account), which is
+distributed under the MIT License. The original copyright notice and license
+text are preserved in `LICENSE`.
+
+What was carried over from the original project
+-----------------------------------------------
+* The product concept: a terminal-first, user-controlled multi-account manager
+  for an AI coding CLI.
+* The interaction model: a numbered account picker, a persistent "active
+  account" pointer, and a launcher that starts the vendor CLI with the
+  selected account's credentials.
+* The core insight that account isolation and conversation history are
+  separable concerns, so a session created under one account can be resumed
+  under another.
+
+What is new here
+----------------
+* An architecture built around the OpenAI Codex CLI's actual `CODEX_HOME`
+  layout (auth.json, config.toml, sessions/, state_*.sqlite,
+  thread_history_*.sqlite), rather than Claude Code's `CLAUDE_CONFIG_DIR`.
+* Credential materialisation with write-back, ownership tracking and atomic
+  file replacement, instead of static per-account config directories.
+* Cross-process locking, writer registration and stale-lock recovery.
+* A TypeScript codebase with lint, typecheck, unit, integration and smoke
+  test coverage.
+
+Third-party software
+--------------------
+`codex-multi-account` does not vendor, patch or redistribute the OpenAI Codex
+CLI. It invokes the user's own installation of `@openai/codex` (Apache-2.0) as
+an external process. "OpenAI", "ChatGPT" and "Codex" are trademarks of OpenAI;
+this project is not affiliated with or endorsed by OpenAI.
