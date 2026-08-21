@@ -259,9 +259,13 @@ export function materializeProfile(slug: string): MaterializeResult {
 
 /**
  * Remove the runtime credential without touching any profile.
- * Used before `codex login` so the flow starts from a clean slate.
+ *
+ * Used before `codex login`, so the flow starts from a clean slate, and when
+ * the last account is deleted. `newOwner` is null only in that second case:
+ * there is no profile left for a refresh to be written back to, so the runtime
+ * must not be left holding one.
  */
-export function clearRuntimeAuth(newOwner: string): void {
+export function clearRuntimeAuth(newOwner: string | null): void {
   ensureDir(runtimeHome());
   rmSync(runtimeAuthPath(), { force: true });
   writeState({ runtimeOwner: newOwner, runtimeAuthFingerprint: null });

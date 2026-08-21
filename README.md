@@ -161,6 +161,21 @@ directory Codex recorded for that session, and the session id. What does not:
 anything the old process was holding in memory, and the prompt cache — the
 first turn after a switch re-reads the history, so it costs a little more.
 
+### Prove it on your own machine
+
+There is a harness that runs the whole scenario against the real Codex CLI and
+your real accounts, and prints a per-step verdict:
+
+```bash
+npm run verify:cross-account -- personal work
+```
+
+It plants a codeword in a session created by the first account, exits, switches
+to the second, resumes that session id, and checks that the codeword comes back
+while the credential in play is the second account's. It costs two short model
+turns and cleans up after itself. If the two profiles happen to hold the same
+credential it says so, rather than reporting a pass it did not earn.
+
 ### Why it is a restart, not a live swap
 
 Codex reads its credential when it starts. No supported mechanism lets a
@@ -373,7 +388,7 @@ npm run typecheck
 npm test
 npm run build
 npm run smoke        # drives the built CLI as a child process
-npm run qa           # all of the above
+npm run qa           # lint + typecheck + test + build + smoke
 ```
 
 Tests run against a throwaway `CMA_HOME` and a stub Codex, so they never touch

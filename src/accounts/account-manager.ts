@@ -188,11 +188,25 @@ export function removeAccount(slug: string, options: RemoveAccountOptions = {}):
     { operation: `remove:${profile.slug}` },
   );
 
-  // Keep a usable active account if the removed one was selected.
+  // Keep a usable active account if the removed one was selected, and put its
+  // credential in place straight away. Leaving an unowned credential in the
+  // runtime would be a state nothing can reason about: a refresh written to it
+  // would have no profile to go back to.
   if (activeProfileSlug() === null) {
     const remaining = listProfiles();
     const next = remaining.find((candidate) => candidate.authenticated) ?? remaining[0];
-    if (next) writeState({ activeProfile: next.slug });
+    if (next) {
+      withRuntimeLock(
+        () => {
+          writeState({ activeProfile: next.slug });
+          materializeProfile(next.slug);
+        },
+        { operation: `reselect:${next.slug}` },
+      );
+    } else {
+      // Nothing left to own it.
+      clearRuntimeAuth(null);
+    }
   }
 }
 

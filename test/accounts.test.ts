@@ -131,11 +131,26 @@ describe('account management', () => {
   it('picks a new active account when the active one is removed', () => {
     createAccount('personal');
     createAccount('work');
-    signIn('work');
+    signIn('personal', 'p');
+    signIn('work', 'w');
     useAccount('personal');
 
     removeAccount('personal', { force: true });
     expect(activeProfileSlug()).toBe('work');
+    // The runtime must never be left holding a credential nobody owns.
+    expect(readState().runtimeOwner).toBe('work');
+    expect(readFileSync(runtimeAuthPath(), 'utf8')).toContain('access-w');
+  });
+
+  it('clears the runtime credential when the last account is removed', () => {
+    createAccount('only');
+    signIn('only');
+    useAccount('only');
+
+    removeAccount('only', { force: true });
+    expect(activeProfileSlug()).toBeNull();
+    expect(readState().runtimeOwner).toBeNull();
+    expect(existsSync(runtimeAuthPath())).toBe(false);
   });
 
   it('explains what to do when nothing is selected', () => {
