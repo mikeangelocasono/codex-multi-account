@@ -46,6 +46,8 @@ export interface WriterRecord {
   command: string;
   cwd: string;
   startedAt: string;
+  /** Set when this launch is resuming a specific session. */
+  sessionId?: string;
 }
 
 /**
@@ -189,8 +191,18 @@ function writerPath(id: string): string {
   return join(writersDir(), `${id}.json`);
 }
 
-/** Announce that a Codex process is about to run under `profile`. */
-export function registerWriter(profile: string, command: string): WriterRecord {
+/**
+ * Announce that a Codex process is about to run under `profile`.
+ *
+ * `sessionId` is recorded when the launch targets a specific session, so a
+ * second attempt to open the same conversation can be refused before two
+ * processes start appending to one transcript.
+ */
+export function registerWriter(
+  profile: string,
+  command: string,
+  sessionId?: string | null,
+): WriterRecord {
   const record: WriterRecord = {
     id: `${process.pid}-${randomBytes(4).toString('hex')}`,
     pid: process.pid,
@@ -199,6 +211,7 @@ export function registerWriter(profile: string, command: string): WriterRecord {
     command,
     cwd: process.cwd(),
     startedAt: new Date().toISOString(),
+    ...(sessionId ? { sessionId } : {}),
   };
 
   ensureDir(writersDir());
@@ -255,6 +268,7 @@ export function listActiveWriters(): WriterRecord[] {
           cwd: typeof parsed.cwd === 'string' ? parsed.cwd : '',
           startedAt:
             typeof parsed.startedAt === 'string' ? parsed.startedAt : new Date(0).toISOString(),
+          ...(typeof parsed.sessionId === 'string' ? { sessionId: parsed.sessionId } : {}),
         };
       }
     } catch {
@@ -279,6 +293,30 @@ export function listActiveWriters(): WriterRecord[] {
     }
   }
   return alive.sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+}
+
+/**
+ * Refuse to open a session that another Codex process already has open.
+ *
+ * Two processes appending to one rollout would interleave turns and corrupt
+ * the transcript, so this is checked before the launch rather than left to
+ * whichever writer happens to flush last.
+ */
+export function assertSessionNotActive(sessionId: string): void {
+  const holder = listActiveWriters().find((writer) => writer.sessionId === sessionId);
+  if (!holder) return;
+
+  throw new CmaError(
+    'ACTIVE_WRITER',
+    `Session ${sessionId} is already active in another Codex process.`,
+    {
+      hint: [
+        `It is open under account "${holder.profile}".`,
+        `  pid ${holder.pid}  started ${holder.startedAt}  cwd ${holder.cwd || 'unknown'}`,
+        'Exit that session first, or resume a different one with `cma sessions`.',
+      ].join('\n'),
+    },
+  );
 }
 
 /**

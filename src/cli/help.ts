@@ -8,6 +8,7 @@ ${style.bold('USAGE')}
 
 ${style.bold('ACCOUNTS')}
   add [name]                   Create an account and sign in with Codex
+                               (asks for the name when omitted)
   list, ls                     Show every account and its status
   use <name>                   Make an account active
   current                      Print the active account name

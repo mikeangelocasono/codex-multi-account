@@ -20,6 +20,7 @@ import { runtimeAuthPath, runtimeHome } from '../storage/paths.js';
 import { ensureDir } from '../storage/atomic.js';
 import {
   assertNoActiveWriters,
+  assertSessionNotActive,
   registerWriter,
   unregisterWriter,
   withRuntimeLock,
@@ -44,6 +45,11 @@ export interface RunCodexOptions {
   label?: string;
   /** Set for `codex login`, where starting without a credential is the point. */
   allowMissingAuth?: boolean;
+  /**
+   * The session this launch will open, when it is known.
+   * Recorded so a second attempt on the same session can be refused.
+   */
+  sessionId?: string | null;
 }
 
 export interface RunCodexResult {
@@ -81,6 +87,7 @@ export async function runCodex(options: RunCodexOptions): Promise<RunCodexResult
   const setup = withRuntimeLock(
     (): { writer: WriterRecord; authenticated: boolean } => {
       assertNoActiveWriters('launch Codex under another account', profile.slug);
+      if (options.sessionId) assertSessionNotActive(options.sessionId);
       const materialized = materializeProfile(profile.slug);
       reportSync(materialized.syncedBack);
 
@@ -91,7 +98,7 @@ export async function runCodex(options: RunCodexOptions): Promise<RunCodexResult
       }
 
       return {
-        writer: registerWriter(profile.slug, options.label ?? 'codex'),
+        writer: registerWriter(profile.slug, options.label ?? 'codex', options.sessionId),
         authenticated: materialized.authenticated,
       };
     },

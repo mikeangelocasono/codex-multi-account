@@ -7,7 +7,7 @@
  */
 
 import { CmaError } from '../../utils/errors.js';
-import { assertSessionSelector } from '../../security/validation.js';
+import { assertSessionSelector, isSessionId } from '../../security/validation.js';
 import { coerceToSlug } from '../../security/validation.js';
 import { requireActiveProfile, useAccount } from '../../accounts/account-manager.js';
 import { runCodex } from '../../codex/codex-runner.js';
@@ -27,6 +27,25 @@ import {
   warn,
 } from '../ui.js';
 
+/**
+ * Which session a forwarded argument list will open, if it names one.
+ *
+ * Only the shapes Codex itself accepts are recognised - `resume <id>` and
+ * `exec resume <id>` - so a stray uuid elsewhere on the line is not mistaken
+ * for a session being opened.
+ */
+export function sessionIdFromArgs(argv: readonly string[]): string | null {
+  const index = argv.indexOf('resume');
+  if (index === -1) return null;
+  const candidate = argv[index + 1];
+  if (!candidate || candidate.startsWith('-')) {
+    // `resume --last` opens the newest session; resolve it so the guard knows
+    // which conversation is about to be claimed.
+    return argv.includes('--last') ? (latestSession()?.id ?? null) : null;
+  }
+  return isSessionId(candidate) ? candidate : null;
+}
+
 /** `cma codex [args...]` - launch Codex with the active account. */
 export async function cmdCodex(argv: readonly string[]): Promise<number> {
   const profile = requireActiveProfile();
@@ -34,6 +53,7 @@ export async function cmdCodex(argv: readonly string[]): Promise<number> {
     args: argv,
     profile: profile.slug,
     label: `codex ${argv[0] ?? ''}`.trim(),
+    sessionId: sessionIdFromArgs(argv),
     // `cma codex login` is a legitimate way to sign the active account in.
     allowMissingAuth: argv[0] === 'login' || argv[0] === 'logout',
   });
@@ -57,10 +77,12 @@ export async function cmdResume(argv: readonly string[]): Promise<number> {
     assertSessionSelector(first);
   }
 
+  const args = ['resume', ...argv];
   const result = await runCodex({
-    args: ['resume', ...argv],
+    args,
     profile: profile.slug,
     label: 'codex resume',
+    sessionId: sessionIdFromArgs(args),
   });
   return result.exitCode;
 }
@@ -168,6 +190,7 @@ export async function cmdSwitch(argv: readonly string[]): Promise<number> {
       args: ['resume', explicitSession],
       profile: result.profile.slug,
       label: 'codex resume',
+      sessionId: explicitSession,
     });
     return run.exitCode;
   }
@@ -179,6 +202,7 @@ export async function cmdSwitch(argv: readonly string[]): Promise<number> {
       args: ['resume', session.id],
       profile: result.profile.slug,
       label: 'codex resume',
+      sessionId: session.id,
     });
     return run.exitCode;
   }

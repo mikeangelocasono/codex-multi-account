@@ -24,12 +24,21 @@ import {
 import { accountAuthPath, accountDir } from '../../storage/paths.js';
 import { inspectAuthFile } from '../../accounts/auth-manager.js';
 import { hasFlag, parseArgs } from '../args.js';
-import { confirm } from '../prompt.js';
+import { confirm, isInteractive, question } from '../prompt.js';
 import { info, log, out, renderTable, safe, style, success, warn } from '../ui.js';
 
 export async function cmdAdd(argv: readonly string[]): Promise<number> {
   const parsed = parseArgs(argv, { valueOptions: ['name'] });
-  const raw = parsed.positionals[0];
+  let raw = parsed.positionals[0];
+
+  // `cma add` on its own is a valid way in: ask for the name rather than
+  // failing on something the user can simply be asked for.
+  if (!raw && isInteractive()) {
+    const suggestion = listProfiles().length === 0 ? 'personal' : 'work';
+    const answer = (await question(`  Account name [${suggestion}]: `)).trim();
+    raw = answer.length > 0 ? answer : suggestion;
+  }
+
   if (!raw) {
     throw new CmaError('INVALID_ARGUMENT', 'An account name is required.', {
       hint: 'For example:\n  cma add personal\n  cma add work',

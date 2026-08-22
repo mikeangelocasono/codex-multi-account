@@ -7,6 +7,7 @@ import { createSandbox } from './helpers.js';
 import type { Sandbox } from './helpers.js';
 import {
   assertNoActiveWriters,
+  assertSessionNotActive,
   isProcessAlive,
   listActiveWriters,
   registerWriter,
@@ -155,6 +156,30 @@ describe('writer registry', () => {
       );
       // Re-launching the same account is allowed: the credential does not change.
       expect(() => assertNoActiveWriters('launch Codex', 'personal')).not.toThrow();
+    } finally {
+      unregisterWriter(record);
+    }
+  });
+
+  it('refuses to open a session another process already has open', () => {
+    const id = '01a01803-e02e-7722-8cb4-ec03dbad2d58';
+    const record = registerWriter('personal', 'codex resume', id);
+    try {
+      expect(() => assertSessionNotActive(id)).toThrow(
+        new RegExp(`Session ${id} is already active in another Codex process`),
+      );
+      // A different session is unaffected.
+      expect(() => assertSessionNotActive('019fdafe-2982-77b0-87aa-7b375a526b79')).not.toThrow();
+    } finally {
+      unregisterWriter(record);
+    }
+    expect(() => assertSessionNotActive(id)).not.toThrow();
+  });
+
+  it('does not claim a session for a launch that names none', () => {
+    const record = registerWriter('personal', 'codex');
+    try {
+      expect(() => assertSessionNotActive('01a01803-e02e-7722-8cb4-ec03dbad2d58')).not.toThrow();
     } finally {
       unregisterWriter(record);
     }

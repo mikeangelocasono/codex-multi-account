@@ -8,6 +8,8 @@ import { run } from '../src/cli/main.js';
 import { accountAuthPath, runtimeAuthPath, runtimeHome } from '../src/storage/paths.js';
 import { activeProfileSlug, readState } from '../src/accounts/profile-store.js';
 import { openDatabase, sqliteAvailable } from '../src/codex/sqlite.js';
+import { registerWriter, unregisterWriter } from '../src/storage/locks.js';
+import { sessionIdFromArgs } from '../src/cli/commands/codex-commands.js';
 
 let sandbox: Sandbox;
 
@@ -169,6 +171,30 @@ describe('running codex through the CLI', () => {
 
     const call = codexCalls(sandbox).find((entry) => entry.args?.[0] === 'resume');
     expect(call?.args).toEqual(['resume', id]);
+  });
+
+  it('maps forwarded arguments to the session they will open', () => {
+    const id = '01a01803-e02e-7722-8cb4-ec03dbad2d58';
+    expect(sessionIdFromArgs(['resume', id])).toBe(id);
+    expect(sessionIdFromArgs(['exec', 'resume', id])).toBe(id);
+    expect(sessionIdFromArgs(['--model', 'x'])).toBeNull();
+    expect(sessionIdFromArgs(['resume'])).toBeNull();
+    // A uuid that is not the argument to `resume` is not a session being opened.
+    expect(sessionIdFromArgs(['--cd', id])).toBeNull();
+    expect(sessionIdFromArgs(['resume', 'not-a-uuid'])).toBeNull();
+  });
+
+  it('refuses a second `cma resume` on a session already open', async () => {
+    await cli(['add', 'work']);
+    const id = '019fdafe-2982-77b0-87aa-7b375a526b79';
+    const holder = registerWriter('work', 'codex resume', id);
+    try {
+      const result = await cli(['resume', id]);
+      expect(result.code).toBe(1);
+      expect(result.stderr).toContain('is already active in another Codex process');
+    } finally {
+      unregisterWriter(holder);
+    }
   });
 
   it('reports the doctor view', async () => {

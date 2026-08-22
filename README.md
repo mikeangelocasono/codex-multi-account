@@ -91,6 +91,7 @@ overwriting it.
 ## Add an account
 
 ```bash
+cma add                    # asks for the name
 cma add personal
 cma add work
 cma add "Client (Acme)"    # stored as the slug "client-acme"
@@ -217,7 +218,7 @@ Actions:
 | Command | What it does |
 | --- | --- |
 | `cma` | Interactive account menu |
-| `cma add <name>` | Create an account and sign in (`--no-login` to skip) |
+| `cma add [name]` | Create an account and sign in (asks for the name if omitted; `--no-login` to skip) |
 | `cma list` \| `cma ls` | Accounts and their status (`--json`) |
 | `cma use <name>` | Make an account active |
 | `cma current` | Print the active account's name |
@@ -330,6 +331,11 @@ Run `cma login work`.
 **`The stored credential for "work" is no longer valid.`**
 Run `cma relogin work`. The old credential is replaced only when the new
 sign-in succeeds.
+
+**`Session ABC123 is already active in another Codex process.`**
+Two Codex processes appending to one transcript would interleave turns, so the
+second attempt is refused. Exit the session that already has it open, or pick a
+different one with `cma sessions`.
 
 **`A Codex process is currently using account "personal".`**
 Exit that Codex session, then switch. If the process is already gone — a closed

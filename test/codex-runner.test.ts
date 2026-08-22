@@ -126,6 +126,34 @@ describe('guard rails', () => {
     }
   });
 
+  it('refuses to resume a session that is already open elsewhere', async () => {
+    createAccount('work');
+    signIn('work');
+    useAccount('work');
+
+    const id = '01a01803-e02e-7722-8cb4-ec03dbad2d58';
+    const other = registerWriter('work', 'codex resume', id);
+    try {
+      await expect(
+        runCodex({ args: ['resume', id], profile: 'work', sessionId: id }),
+      ).rejects.toThrow(/already active in another Codex process/);
+    } finally {
+      unregisterWriter(other);
+    }
+  });
+
+  it('records the session id so a second attempt can be refused', async () => {
+    createAccount('work');
+    signIn('work');
+    useAccount('work');
+
+    const id = '01a01803-e02e-7722-8cb4-ec03dbad2d58';
+    const result = await runCodex({ args: ['resume', id], profile: 'work', sessionId: id });
+    expect(result.exitCode).toBe(0);
+    // The claim is released on exit.
+    expect(listActiveWriters()).toEqual([]);
+  });
+
   it('deregisters the session when Codex exits', async () => {
     createAccount('work');
     signIn('work');
