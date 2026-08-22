@@ -1,28 +1,85 @@
+# ---------------------------------------------------------------------------
+# Dependencies, build output, caches
+# ---------------------------------------------------------------------------
 node_modules/
 dist/
+build/
+out/
 coverage/
 *.tsbuildinfo
+.eslintcache
+.cache/
+.npm/
+.turbo/
+.parcel-cache/
+.vite/
 
-# Runtime state lives in ~/.codex-multi-account, never in the repo. These
-# patterns are anchored to the repo root so they cannot shadow source
-# directories such as src/accounts/.
+# ---------------------------------------------------------------------------
+# Runtime state
+#
+# Profiles, credentials and the shared Codex runtime live in
+# ~/.codex-multi-account, never in the repository. These patterns are anchored
+# to the repository root so they cannot shadow source directories such as
+# src/accounts/ or src/storage/.
+# ---------------------------------------------------------------------------
 /accounts/
 /runtime/
 /backups/
 /locks/
-auth.json
-*.auth.json
 .codex-multi-account/
+.codex/
 runtime.lock
+*.lock
+!package-lock.json
 
-# Secrets
+# ---------------------------------------------------------------------------
+# Credentials and secrets - never commit any of these
+# ---------------------------------------------------------------------------
 .env
 .env.*
 !.env.example
+auth.json
+*.auth.json
+credentials.json
+*.credentials.json
+secrets.json
+*.secret
+*.secrets
+*.token
+*_token
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+id_rsa*
+id_ed25519*
+.netrc
+.npmrc
 
-# OS / editor noise
+# ---------------------------------------------------------------------------
+# Temporary files and logs
+# ---------------------------------------------------------------------------
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.orig
+*.log
+logs/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------------------------------------------------------------------------
+# OS and editor noise
+# ---------------------------------------------------------------------------
 .DS_Store
 Thumbs.db
+desktop.ini
 *.swp
+*.swo
 .idea/
 .vscode/

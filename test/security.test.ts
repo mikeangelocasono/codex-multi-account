@@ -137,7 +137,9 @@ describe('redaction', () => {
   });
 
   it('strips token-shaped strings from free text', () => {
-    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk';
+    // Assembled from parts: a synthetic value that matches the JWT shape the
+    // redactor looks for, without resembling anyone's real token.
+    const jwt = ['eyJ' + 'A'.repeat(12), 'B'.repeat(12), 'C'.repeat(12)].join('.');
     expect(redactText(`token=${jwt}`)).not.toContain(jwt);
     expect(redactText('key=sk-abcdefghijklmnopqrstuvwx')).toContain('<redacted-key>');
   });
@@ -151,7 +153,7 @@ describe('redaction', () => {
   });
 
   it('masks identifiers to their tail', () => {
-    expect(maskTail('c7033e90-fdd1-44c5-9530-9d15c4a565ae')).toBe('...a565ae');
+    expect(maskTail('00000000-1111-2222-3333-4444aabbccdd')).toBe('...bbccdd');
     expect(maskTail(null)).toBe('unknown');
     expect(maskTail('abc')).toBe('***');
   });
